@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29709.97
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LobbyServer", "LobbyServer.csproj", "{4B5C1E3A-9B1F-46F3-B127-1D2CBF7478AC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LobbyUnitTest", "LobbyUnitTest\LobbyUnitTest.csproj", "{D34E5E97-C1B0-434D-BCA9-6F4B8ED519C4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LobbyServer", "LobbyServer\LobbyServer.csproj", "{F761F9FB-71F7-46E9-ACF5-8C42E77F3D84}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +13,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4B5C1E3A-9B1F-46F3-B127-1D2CBF7478AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4B5C1E3A-9B1F-46F3-B127-1D2CBF7478AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4B5C1E3A-9B1F-46F3-B127-1D2CBF7478AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4B5C1E3A-9B1F-46F3-B127-1D2CBF7478AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D34E5E97-C1B0-434D-BCA9-6F4B8ED519C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D34E5E97-C1B0-434D-BCA9-6F4B8ED519C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D34E5E97-C1B0-434D-BCA9-6F4B8ED519C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D34E5E97-C1B0-434D-BCA9-6F4B8ED519C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F761F9FB-71F7-46E9-ACF5-8C42E77F3D84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F761F9FB-71F7-46E9-ACF5-8C42E77F3D84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F761F9FB-71F7-46E9-ACF5-8C42E77F3D84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F761F9FB-71F7-46E9-ACF5-8C42E77F3D84}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

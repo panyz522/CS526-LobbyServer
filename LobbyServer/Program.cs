@@ -10,7 +10,6 @@ namespace LobbyServer
         static void Main(string[] args)
         {
 
-
         }
     }
 }
