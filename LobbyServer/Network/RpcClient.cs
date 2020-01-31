@@ -95,6 +95,7 @@ namespace SneakRobber2.Network
                 }
                 LogInfo($"Reading input from {endPoint} finished. Firing event...");
 
+                OnReceivedData(endPoint, func, ps);
                 ReceivedData?.Invoke(
                     this,
                     new EventArgs<EndPoint, Invocation>(
@@ -128,23 +129,24 @@ namespace SneakRobber2.Network
                         ClientSendFailed?.Invoke(this, new EventArg<EndPoint>(endPoint));
                     }
                 }
-                LogInfo("Sender stopped.");
             }
             catch (ObjectDisposedException) { }
             LogInfo("Sender stopped.");
         }
 
-        private void LogInfo(object s)
+        protected virtual void OnReceivedData(EndPoint endPoint, string func, object[] ps) { }
+
+        protected void LogInfo(object s)
         {
             Logger.LogInfo("RpcClient: " + s);
         }
 
-        private void LogWarning(object s)
+        protected void LogWarning(object s)
         {
             Logger.LogWarning("RpcClient: " + s);
         }
 
-        private void LogError(object s)
+        protected void LogError(object s)
         {
             Logger.LogError("RpcClient: " + s);
         }

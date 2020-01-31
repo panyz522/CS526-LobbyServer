@@ -2,11 +2,11 @@
 {
     public interface IPlayerToLobby
     {
-        bool JoinRoom(string room);
+        void JoinRoom(string room);
 
-        bool Prepare();
+        void Prepare();
 
-        bool Unprepare();
+        void Unprepare();
 
         void Exit();
     }
