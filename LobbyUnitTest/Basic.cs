@@ -98,7 +98,7 @@ namespace LobbyUnitTest
         [Fact]
         public void TypedSend()
         {
-            using var sc = new ServerClientPair<RpcServerForLobbyToPlayer<LobbyExecutor>, RpcClientForPlayerToLobby<PlayerExecutor>>();
+            using var sc = new ServerClientPair<RpcServerWithType<LobbyExecutor, IPlayerToLobby, ILobbyToPlayer>, RpcClientWithType<PlayerExecutor, ILobbyToPlayer, IPlayerToLobby>>();
             using var evt = new ManualResetEvent(false);
             this.evt = evt;
             EndPoint ep = null;
@@ -122,7 +122,7 @@ namespace LobbyUnitTest
             evt.Reset();
         }
 
-        public class LobbyExecutor : IPlayerToLobby, IRpcData
+        public class LobbyExecutor : IPlayerToLobby, IRpcContext
         {
             public EndPoint RemoteEndpoint { get; set; }
 
@@ -153,7 +153,7 @@ namespace LobbyUnitTest
             }
         }
 
-        public class PlayerExecutor : ILobbyToPlayer, IRpcData
+        public class PlayerExecutor : ILobbyToPlayer, IRpcContext
         {
             public EndPoint RemoteEndpoint { get; set; }
 

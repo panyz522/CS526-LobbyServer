@@ -7,15 +7,16 @@ using System.Text;
 
 namespace SneakRobber2.Network
 {
-    public class RpcClientForPlayerToLobby<TExecutor> : RpcClient
-        where TExecutor : ILobbyToPlayer, IRpcData, new()
+    public class RpcClientWithType<TExecutor, IExecutorRpc, IInvokerRpc> : RpcClient
+        where TExecutor : IExecutorRpc, IRpcContext, new()
+        where IInvokerRpc : class
     {
-        public IPlayerToLobby Invoker { get; private set; }
+        public IInvokerRpc Invoker { get; private set; }
 
-        public RpcClientForPlayerToLobby()
+        public RpcClientWithType()
         {
             IProxyGenerator gen = new ProxyGenerator();
-            Invoker = gen.CreateInterfaceProxyWithoutTarget<IPlayerToLobby>(new Interceptor(this));
+            Invoker = gen.CreateInterfaceProxyWithoutTarget<IInvokerRpc>(new Interceptor(this));
         }
 
         protected override void OnReceivedData(EndPoint endPoint, string func, object[] ps)
@@ -27,9 +28,9 @@ namespace SneakRobber2.Network
 
         private class Interceptor : IInterceptor
         {
-            readonly RpcClientForPlayerToLobby<TExecutor> client;
+            readonly RpcClientWithType<TExecutor, IExecutorRpc, IInvokerRpc> client;
 
-            public Interceptor(RpcClientForPlayerToLobby<TExecutor> client)
+            public Interceptor(RpcClientWithType<TExecutor, IExecutorRpc, IInvokerRpc> client)
             {
                 this.client = client;
             }

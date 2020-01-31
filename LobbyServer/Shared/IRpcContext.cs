@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SneakRobber2.Shared
 {
-    public interface IRpcData
+    public interface IRpcContext
     {
         public EndPoint RemoteEndpoint { get; set; }
     }

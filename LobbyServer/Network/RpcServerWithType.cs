@@ -8,29 +8,30 @@ using System.Threading;
 
 namespace SneakRobber2.Network
 {
-    public class RpcServerForLobbyToPlayer<TExecutor> : RpcServer
-        where TExecutor : IPlayerToLobby, IRpcData, new()
+    public class RpcServerWithType<TExecutor, IExecutorRpc, IInvokerRpc> : RpcServer
+        where TExecutor : IExecutorRpc, IRpcContext, new()
+        where IInvokerRpc : class
     {
-        public interface IInvoker : ILobbyToPlayer, IRpcData { }
-
-        private IInvoker invoker;
+        private readonly IInvokerRpc invoker;
 
         private readonly AsyncLocal<EndPoint> localEndPoint = new AsyncLocal<EndPoint>();
 
-        public RpcServerForLobbyToPlayer()
+        public RpcServerWithType()
         {
             IProxyGenerator gen = new ProxyGenerator();
-            invoker = gen.CreateInterfaceProxyWithoutTarget<IInvoker>(new Interceptor(this));
+            invoker = gen.CreateInterfaceProxyWithoutTarget<IInvokerRpc>(new Interceptor(this));
         }
 
         protected override void OnReceivedData(EndPoint endPoint, string func, object[] ps)
         {
-            var callObj = new TExecutor();
-            callObj.RemoteEndpoint = endPoint;
+            var callObj = new TExecutor
+            {
+                RemoteEndpoint = endPoint
+            };
             typeof(TExecutor).GetMethod(func).Invoke(callObj, ps);
         }
 
-        public IInvoker InvokeTo(EndPoint endPoint)
+        public IInvokerRpc InvokeTo(EndPoint endPoint)
         {
             localEndPoint.Value = endPoint;
             return invoker;
@@ -38,9 +39,9 @@ namespace SneakRobber2.Network
 
         private class Interceptor : IInterceptor
         {
-            readonly RpcServerForLobbyToPlayer<TExecutor> server;
+            readonly RpcServerWithType<TExecutor, IExecutorRpc, IInvokerRpc> server;
 
-            public Interceptor(RpcServerForLobbyToPlayer<TExecutor> server)
+            public Interceptor(RpcServerWithType<TExecutor, IExecutorRpc, IInvokerRpc> server)
             {
                 this.server = server;
             }
