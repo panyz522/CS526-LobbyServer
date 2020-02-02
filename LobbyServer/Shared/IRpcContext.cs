@@ -7,6 +7,6 @@ namespace SneakRobber2.Shared
 {
     public interface IRpcContext
     {
-        public EndPoint RemoteEndpoint { get; set; }
+        EndPoint RemoteEndpoint { get; set; }
     }
 }

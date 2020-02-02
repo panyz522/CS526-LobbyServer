@@ -2,7 +2,7 @@
 {
     public interface ILobbyToPlayer
     {
-        void OnConnected(string givenName);
+        void OnConnected(string givenName, string joinedRoom);
 
         void OnPlayerJoined(string name, string room);
 

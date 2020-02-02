@@ -1,5 +1,5 @@
-﻿using SneakRobber2.Shared;
-using SneakRobber2.Utils;
+using SneakRobber2.Shared;
+using SneakRobber2.Utility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -31,7 +31,7 @@ namespace SneakRobber2.Network
         {
         }
 
-        public async Task StartAsync(string ip, int port)
+        public async Task<int> StartAsync(string ip, int port)
         {
             LogInfo("Starting...");
             System.Diagnostics.Debug.Assert(client == null);
@@ -43,6 +43,22 @@ namespace SneakRobber2.Network
             stream = client.GetStream();
             netTask = Task.Run(ReaderRun);
             sendTask = Task.Run(SenderRun);
+            return ((IPEndPoint)client.Client.LocalEndPoint).Port;
+        }
+
+        public int Start(string ip, int port)
+        {
+            LogInfo("Starting...");
+            System.Diagnostics.Debug.Assert(client == null);
+
+            sendQ?.Dispose();
+            sendQ = new BlockingCollection<byte[]>();
+            client = new TcpClient();
+            client.Connect(ip, port);
+            stream = client.GetStream();
+            netTask = Task.Run(ReaderRun);
+            sendTask = Task.Run(SenderRun);
+            return ((IPEndPoint)client.Client.LocalEndPoint).Port;
         }
 
         public void Stop()
@@ -96,11 +112,19 @@ namespace SneakRobber2.Network
                 int len = 0;
                 try
                 {
-                    len = stream.Read(data, 0, MaxLength);
+                    len = stream.Read(data, 0, sizeof(int));
                 }
                 catch { }
                 if (len == 0) break;
-                System.Diagnostics.Debug.Assert(len < MaxLength);
+                int dataSize = BitConverter.ToInt32(data, 0);
+                try
+                {
+                    len = stream.Read(data, 0, dataSize);
+                }
+                catch { }
+                if (len == 0) break;
+                System.Diagnostics.Debug.Assert(len == dataSize && dataSize < MaxLength);
+
                 string func;
                 object[] ps;
                 using (var serStream = new MemoryStream(data))
@@ -108,7 +132,7 @@ namespace SneakRobber2.Network
                     func = (string)formatter.Deserialize(serStream);
                     ps = (object[])formatter.Deserialize(serStream);
                 }
-                LogInfo($"Reading input from {endPoint} finished. Firing event...");
+                LogInfo($"Reading input from {endPoint} finished. Firing event for {func}...");
 
                 OnReceivedData(endPoint, func, ps);
                 ReceivedData?.Invoke(
@@ -122,7 +146,7 @@ namespace SneakRobber2.Network
                         }
                     )
                 );
-                LogInfo($"Reading input from {endPoint} finished. Firing event finished.");
+                LogInfo($"Reading input from {endPoint} finished. Firing event for {func} finished.");
             }
             LogInfo($"Client {endPoint} disconnected");
         }
@@ -137,6 +161,7 @@ namespace SneakRobber2.Network
                 {
                     try
                     {
+                        stream.Write(BitConverter.GetBytes(item.Length), 0, sizeof(int));
                         stream.Write(item, 0, item.Length);
                     }
                     catch

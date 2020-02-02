@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SneakRobber2.Utils
+namespace SneakRobber2.Utility
 {
     public class EventArg<T> : EventArgs
     {

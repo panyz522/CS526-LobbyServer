@@ -1,7 +1,7 @@
 using SneakRobber2.Lobby;
 using SneakRobber2.Network;
 using SneakRobber2.Shared;
-using SneakRobber2.Utils;
+using SneakRobber2.Utility;
 using System;
 using System.Net;
 using System.Threading;
@@ -196,7 +196,7 @@ namespace LobbyUnitTest
         {
             public EndPoint RemoteEndpoint { get; set; }
 
-            public void OnConnected(string givenName)
+            public void OnConnected(string givenName, string joinedRoom)
             {
                 Log();
             }
@@ -227,11 +227,6 @@ namespace LobbyUnitTest
                 instance.evt.Set();
             }
 
-            public void OnPlayerLeaved(string name, string room)
-            {
-                Log();
-            }
-
             public void OnPlayerLeaved(string name)
             {
                 throw new NotImplementedException();
@@ -257,7 +252,7 @@ namespace LobbyUnitTest
         {
             public EndPoint RemoteEndpoint { get; set; }
 
-            public void OnConnected(string givenName)
+            public void OnConnected(string givenName, string joinedRoom)
             {
                 Log();
             }
@@ -283,11 +278,6 @@ namespace LobbyUnitTest
             }
 
             public void OnPlayerJoined(string name, string room)
-            {
-                Log();
-            }
-
-            public void OnPlayerLeaved(string name, string room)
             {
                 Log();
             }
@@ -317,7 +307,7 @@ namespace LobbyUnitTest
         {
             public EndPoint RemoteEndpoint { get; set; }
 
-            public void OnConnected(string givenName)
+            public void OnConnected(string givenName, string joinedRoom)
             {
                 Basic.instance.evt.Set();
                 Log(givenName);
@@ -344,11 +334,6 @@ namespace LobbyUnitTest
             }
 
             public void OnPlayerJoined(string name, string room)
-            {
-                Log();
-            }
-
-            public void OnPlayerLeaved(string name, string room)
             {
                 Log();
             }

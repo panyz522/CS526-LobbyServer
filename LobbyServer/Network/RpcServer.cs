@@ -1,5 +1,5 @@
 ﻿using SneakRobber2.Shared;
-using SneakRobber2.Utils;
+using SneakRobber2.Utility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -79,6 +79,7 @@ namespace SneakRobber2.Network
             }
             System.Diagnostics.Debug.Assert(data.Length < MaxLength);
             sendQ.Add(new KeyValuePair<EndPoint, byte[]>(endPoint, data));
+            LogInfo($"Queued msg to {endPoint} for func {func}");
         }
 
         private void ListenerRun()
@@ -114,11 +115,19 @@ namespace SneakRobber2.Network
                 int len = 0;
                 try
                 {
-                    len = stream.Read(data, 0, MaxLength);
+                    len = stream.Read(data, 0, sizeof(int));
                 }
                 catch { }
                 if (len == 0) break;
-                System.Diagnostics.Debug.Assert(len < MaxLength);
+                int dataSize = BitConverter.ToInt32(data, 0);
+                try
+                {
+                    len = stream.Read(data, 0, dataSize);
+                }
+                catch { }
+                if (len == 0) break;
+                System.Diagnostics.Debug.Assert(len == dataSize && dataSize < MaxLength);
+
                 string func;
                 object[] ps;
                 using (var serStream = new MemoryStream(data))
@@ -143,6 +152,7 @@ namespace SneakRobber2.Network
                 LogInfo($"Reading input from {endPoint} finished. Firing event finished.");
             }
             LogInfo($"Client {endPoint} disconnected");
+            remoteClients.Remove(endPoint);
             ClientDisconnected?.Invoke(this, new EventArg<EndPoint>(endPoint));
         }
 
@@ -156,7 +166,9 @@ namespace SneakRobber2.Network
                     try
                     {
                         var stream = remoteClients[item.Key].GetStream();
+                        stream.Write(BitConverter.GetBytes(item.Value.Length), 0, sizeof(int));
                         stream.Write(item.Value, 0, item.Value.Length);
+                        LogInfo($"Dequeued a msg and sent to {item.Key}");
                     }
                     catch
                     {

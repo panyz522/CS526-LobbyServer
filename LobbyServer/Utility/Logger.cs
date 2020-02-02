@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SneakRobber2.Utils
+namespace SneakRobber2.Utility
 {
     public static class Logger
     {
@@ -17,7 +17,7 @@ namespace SneakRobber2.Utils
         {
             log($"[{DateTime.Now}] ");
             log(obj.ToString());
-            log(Environment.NewLine);
+            log("");
         }
 
         public static void LogWarning(object obj)
@@ -27,7 +27,7 @@ namespace SneakRobber2.Utils
 
             log($"[{DateTime.Now}] ");
             log(obj.ToString());
-            log(Environment.NewLine);
+            log("");
 
             Console.BackgroundColor = color;
         }
@@ -39,7 +39,7 @@ namespace SneakRobber2.Utils
 
             log($"[{DateTime.Now}] ");
             log(obj.ToString());
-            log(Environment.NewLine);
+            log("");
 
             Console.BackgroundColor = color;
         }

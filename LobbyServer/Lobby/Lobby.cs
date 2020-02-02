@@ -1,6 +1,6 @@
 ﻿using SneakRobber2.Network;
 using SneakRobber2.Shared;
-using SneakRobber2.Utils;
+using SneakRobber2.Utility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -30,7 +30,7 @@ namespace SneakRobber2.Lobby
             instance = this;
         }
 
-        private void OnClientSendFailed(object sender, Utils.EventArg<EndPoint> e)
+        private void OnClientSendFailed(object sender, Utility.EventArg<EndPoint> e)
         {
             lock (Lock)
             {
@@ -39,7 +39,7 @@ namespace SneakRobber2.Lobby
             }
         }
 
-        private void OnClientConnected(object sender, Utils.EventArg<EndPoint> e)
+        private void OnClientConnected(object sender, Utility.EventArg<EndPoint> e)
         {
             lock (Lock)
             {
@@ -53,16 +53,19 @@ namespace SneakRobber2.Lobby
                 var res = players.TryAdd(e.Value, player);
                 Debug.Assert(res);
 
-                Server.InvokeTo(e.Value).OnConnected(player.Name);
+                Server.InvokeTo(e.Value).OnConnected(player.Name, player.Room);
 
-                NotifyOthers(e.Value, (p) =>
+                ForOthers(e.Value, (p) =>
                 {
+                    // Tell new player other players' info
+                    Server.InvokeTo(e.Value).OnPlayerJoined(p.Value.Name, p.Value.Room);
+                    // Tell other player new player's info
                     Server.InvokeTo(p.Key).OnPlayerJoined(player.Name, LobbyRoomName);
                 });
             }
         }
 
-        private void OnClientDisconnected(object sender, Utils.EventArg<EndPoint> e)
+        private void OnClientDisconnected(object sender, Utility.EventArg<EndPoint> e)
         {
             lock (Lock)
             {
@@ -71,7 +74,7 @@ namespace SneakRobber2.Lobby
                 if (!players.ContainsKey(e.Value)) return;
                 var player = players[e.Value];
 
-                NotifyOthers(e.Value, (p) =>
+                ForOthers(e.Value, (p) =>
                 {
                     Server.InvokeTo(p.Key).OnPlayerLeaved(player.Name);
                 });
@@ -80,7 +83,7 @@ namespace SneakRobber2.Lobby
             }
         }
 
-        private void NotifyOthers(EndPoint sender, Action<KeyValuePair<EndPoint, PlayerData>> action)
+        private void ForOthers(EndPoint sender, Action<KeyValuePair<EndPoint, PlayerData>> action)
         {
             foreach (var p in players)
             {
@@ -91,7 +94,7 @@ namespace SneakRobber2.Lobby
             }
         }
 
-        private void NotifyAll(Action<KeyValuePair<EndPoint, PlayerData>> action)
+        private void ForAll(Action<KeyValuePair<EndPoint, PlayerData>> action)
         {
             foreach (var p in players)
             {
@@ -99,7 +102,7 @@ namespace SneakRobber2.Lobby
             }
         }
 
-        private void NotifyOthersInRoom(EndPoint sender, string senderRoom, Action<KeyValuePair<EndPoint, PlayerData>> action)
+        private void ForOthersInRoom(EndPoint sender, string senderRoom, Action<KeyValuePair<EndPoint, PlayerData>> action)
         {
             foreach (var p in players)
             {
@@ -132,7 +135,7 @@ namespace SneakRobber2.Lobby
                     var oldName = player.Name;
                     player.Name = name;
 
-                    instance.NotifyOthers(RemoteEndpoint, (p) =>
+                    instance.ForOthers(RemoteEndpoint, (p) =>
                     {
                         instance.Server.InvokeTo(p.Key).OnPlayerChangeName(oldName, name);
                     });
@@ -147,7 +150,7 @@ namespace SneakRobber2.Lobby
                 {
                     var player = instance.players[RemoteEndpoint];
 
-                    instance.NotifyOthers(RemoteEndpoint, (p) =>
+                    instance.ForOthers(RemoteEndpoint, (p) =>
                     {
                         instance.Server.InvokeTo(p.Key).OnPlayerLeaved(player.Name);
                     });
@@ -167,7 +170,7 @@ namespace SneakRobber2.Lobby
                     var leavedRoom = player.Room;
                     player.Room = room;
 
-                    instance.NotifyOthers(RemoteEndpoint, (p) =>
+                    instance.ForOthers(RemoteEndpoint, (p) =>
                     {
                         instance.Server.InvokeTo(p.Key).OnPlayerChangeRoom(player.Name, room);
                     });
@@ -184,7 +187,7 @@ namespace SneakRobber2.Lobby
 
                     player.IsReady = true;
 
-                    instance.NotifyOthersInRoom(RemoteEndpoint, player.Room, (p) =>
+                    instance.ForOthersInRoom(RemoteEndpoint, player.Room, (p) =>
                     {
                         instance.Server.InvokeTo(p.Key).OnPlayerPrepared(player.Name);
                     });
@@ -201,7 +204,7 @@ namespace SneakRobber2.Lobby
 
                     player.IsReady = false;
 
-                    instance.NotifyOthersInRoom(RemoteEndpoint, player.Room, (p) =>
+                    instance.ForOthersInRoom(RemoteEndpoint, player.Room, (p) =>
                     {
                         instance.Server.InvokeTo(p.Key).OnPlayerUnprepared(player.Name);
                     });
