@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace SneakRobber2.Network
 {
-    public class RpcServer
+    public class RpcServer : IDisposable
     {
         public const int MaxLength = 1024 * 8;
 
@@ -24,6 +24,7 @@ namespace SneakRobber2.Network
         private Task sendTask;
 
         public event EventHandler<EventArg<EndPoint>> ClientConnected;
+        public event EventHandler<EventArg<EndPoint>> ClientDisconnected;
         public event EventHandler<EventArg<EndPoint>> ClientSendFailed;
         public event EventHandler<EventArgs<EndPoint, Invocation>> ReceivedData;
 
@@ -61,6 +62,7 @@ namespace SneakRobber2.Network
             }
             sendTask.Wait();
             listener = null;
+            disposedValue = true;
 
             LogInfo("Successfully Stopped and Disposed");
         }
@@ -93,6 +95,7 @@ namespace SneakRobber2.Network
                 }
             }
             catch (SocketException) { }
+            catch (ObjectDisposedException) { }
             LogInfo("Listener Stopped");
         }
 
@@ -108,7 +111,12 @@ namespace SneakRobber2.Network
             while (true)
             {
                 LogInfo($"Reading input from {endPoint}...");
-                int len = stream.Read(data, 0, MaxLength);
+                int len = 0;
+                try
+                {
+                    len = stream.Read(data, 0, MaxLength);
+                }
+                catch { }
                 if (len == 0) break;
                 System.Diagnostics.Debug.Assert(len < MaxLength);
                 string func;
@@ -135,6 +143,7 @@ namespace SneakRobber2.Network
                 LogInfo($"Reading input from {endPoint} finished. Firing event finished.");
             }
             LogInfo($"Client {endPoint} disconnected");
+            ClientDisconnected?.Invoke(this, new EventArg<EndPoint>(endPoint));
         }
 
         private void SenderRun()
@@ -176,5 +185,25 @@ namespace SneakRobber2.Network
         {
             Logger.LogError("RpcServer: " + s);
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    Stop();
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+        #endregion
     }
 }

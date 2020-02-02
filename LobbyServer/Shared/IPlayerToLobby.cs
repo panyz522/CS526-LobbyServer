@@ -2,7 +2,9 @@
 {
     public interface IPlayerToLobby
     {
-        void JoinRoom(string room);
+        void ChangeName(string name);
+
+        void ChangeRoom(string room);
 
         void Prepare();
 

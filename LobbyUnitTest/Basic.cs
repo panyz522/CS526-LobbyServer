@@ -1,3 +1,4 @@
+using SneakRobber2.Lobby;
 using SneakRobber2.Network;
 using SneakRobber2.Shared;
 using SneakRobber2.Utils;
@@ -30,13 +31,15 @@ namespace LobbyUnitTest
 
         public void Dispose()
         {
-            server.Stop();
-            client.Stop();
+            server.Dispose();
+            client.Dispose();
         }
     }
 
     public class Basic
     {
+        public const string LocalHost = "127.0.0.1";
+
         private readonly ITestOutputHelper output;
         private static Basic instance;
 
@@ -98,7 +101,7 @@ namespace LobbyUnitTest
         [Fact]
         public void TypedSend()
         {
-            using var sc = new ServerClientPair<RpcServerWithType<LobbyExecutor, IPlayerToLobby, ILobbyToPlayer>, RpcClientWithType<PlayerExecutor, ILobbyToPlayer, IPlayerToLobby>>();
+            using var sc = new ServerClientPair<RpcServerWithType<LobbyExecutor, IPlayerToLobby, ILobbyToPlayer>, RpcClientWithType<SimplePlayerExecutor, ILobbyToPlayer, IPlayerToLobby>>();
             using var evt = new ManualResetEvent(false);
             this.evt = evt;
             EndPoint ep = null;
@@ -113,11 +116,42 @@ namespace LobbyUnitTest
             evt.WaitOne();
             evt.Reset();
 
-            sc.client.Invoker.JoinRoom("Lobby");
+            sc.client.Invoker.ChangeRoom("Lobby");
             evt.WaitOne();
             evt.Reset();
 
             sc.server.InvokeTo(ep).OnPlayerJoined("Player1", "Lobby");
+            evt.WaitOne();
+            evt.Reset();
+        }
+
+        [Fact]
+        public void LobbyConnect()
+        {
+            using Lobby lobby = new Lobby();
+            using RpcClientWithType<EmptyPlayerExecutor, ILobbyToPlayer, IPlayerToLobby> 
+                player1 = new RpcClientWithType<EmptyPlayerExecutor, ILobbyToPlayer, IPlayerToLobby>(),
+                player2 = new RpcClientWithType<EmptyPlayerExecutor, ILobbyToPlayer, IPlayerToLobby>();
+            lobby.Start(10001);
+            player1.StartAsync(LocalHost, 10001).Wait();
+            player2.StartAsync(LocalHost, 10001).Wait();
+        }
+
+        [Fact]
+        public void LobbyRun()
+        {
+            using Lobby lobby = new Lobby();
+            using RpcClientWithType<PlayerExecutor, ILobbyToPlayer, IPlayerToLobby>
+                player1 = new RpcClientWithType<PlayerExecutor, ILobbyToPlayer, IPlayerToLobby>(),
+                player2 = new RpcClientWithType<PlayerExecutor, ILobbyToPlayer, IPlayerToLobby>();
+            using var evt = new ManualResetEvent(false);
+            this.evt = evt;
+
+            lobby.Start(10001);
+            player1.StartAsync(LocalHost, 10001).Wait();
+            evt.WaitOne();
+            evt.Reset();
+            player2.StartAsync(LocalHost, 10001).Wait();
             evt.WaitOne();
             evt.Reset();
         }
@@ -131,7 +165,7 @@ namespace LobbyUnitTest
                 Log();
             }
 
-            public void JoinRoom(string room)
+            public void ChangeRoom(string room)
             {
                 Log(room); 
                 instance.evt?.Set(); 
@@ -151,11 +185,21 @@ namespace LobbyUnitTest
             {
                 instance.Log($"Server RPC called: {memberName}({ps})");
             }
+
+            public void ChangeName(string name)
+            {
+                Log();
+            }
         }
 
-        public class PlayerExecutor : ILobbyToPlayer, IRpcContext
+        public class SimplePlayerExecutor : ILobbyToPlayer, IRpcContext
         {
             public EndPoint RemoteEndpoint { get; set; }
+
+            public void OnConnected(string givenName)
+            {
+                Log();
+            }
 
             public void OnGameStarted(string ip, int port, string[] players)
             {
@@ -167,6 +211,16 @@ namespace LobbyUnitTest
                 Log();
             }
 
+            public void OnPlayerChangeName(string oldName, string newName)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void OnPlayerChangeRoom(string name, string room)
+            {
+                throw new NotImplementedException();
+            }
+
             public void OnPlayerJoined(string name, string room)
             {
                 Log();
@@ -174,6 +228,132 @@ namespace LobbyUnitTest
             }
 
             public void OnPlayerLeaved(string name, string room)
+            {
+                Log();
+            }
+
+            public void OnPlayerLeaved(string name)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void OnPlayerPrepared(string name)
+            {
+                Log();
+            }
+
+            public void OnPlayerUnprepared(string name)
+            {
+                Log();
+            }
+
+            private void Log([System.Runtime.CompilerServices.CallerMemberName] string memberName = "")
+            {
+                instance.Log("Server RPC called: " + memberName);
+            }
+        }
+
+        public class EmptyPlayerExecutor : ILobbyToPlayer, IRpcContext
+        {
+            public EndPoint RemoteEndpoint { get; set; }
+
+            public void OnConnected(string givenName)
+            {
+                Log();
+            }
+
+            public void OnGameStarted(string ip, int port, string[] players)
+            {
+                Log();
+            }
+
+            public void OnGameStartFailed(string err)
+            {
+                Log();
+            }
+
+            public void OnPlayerChangeName(string oldName, string newName)
+            {
+                Log();
+            }
+
+            public void OnPlayerChangeRoom(string name, string room)
+            {
+                Log();
+            }
+
+            public void OnPlayerJoined(string name, string room)
+            {
+                Log();
+            }
+
+            public void OnPlayerLeaved(string name, string room)
+            {
+                Log();
+            }
+
+            public void OnPlayerLeaved(string name)
+            {
+                Log();
+            }
+
+            public void OnPlayerPrepared(string name)
+            {
+                Log();
+            }
+
+            public void OnPlayerUnprepared(string name)
+            {
+                Log();
+            }
+
+            private void Log([System.Runtime.CompilerServices.CallerMemberName] string memberName = "")
+            {
+                instance.Log("Server RPC called: " + memberName);
+            }
+        }
+
+        public class PlayerExecutor : ILobbyToPlayer, IRpcContext
+        {
+            public EndPoint RemoteEndpoint { get; set; }
+
+            public void OnConnected(string givenName)
+            {
+                Basic.instance.evt.Set();
+                Log(givenName);
+            }
+
+            public void OnGameStarted(string ip, int port, string[] players)
+            {
+                Log();
+            }
+
+            public void OnGameStartFailed(string err)
+            {
+                Log();
+            }
+
+            public void OnPlayerChangeName(string oldName, string newName)
+            {
+                Log();
+            }
+
+            public void OnPlayerChangeRoom(string name, string room)
+            {
+                Log();
+            }
+
+            public void OnPlayerJoined(string name, string room)
+            {
+                Log();
+            }
+
+            public void OnPlayerLeaved(string name, string room)
+            {
+                Log();
+            }
+
+            public void OnPlayerLeaved(string name)
             {
                 Log();
             }

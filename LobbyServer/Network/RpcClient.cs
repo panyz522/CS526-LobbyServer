@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace SneakRobber2.Network
 {
-    public class RpcClient
+    public class RpcClient : IDisposable
     {
 
         public const int MaxLength = 1024 * 8;
@@ -54,6 +54,7 @@ namespace SneakRobber2.Network
             sendQ.CompleteAdding();
             sendQ.Dispose();
             sendTask.Wait();
+            disposedValue = true;
 
             LogInfo("Successfully Stopped and Disposed");
         }
@@ -74,7 +75,16 @@ namespace SneakRobber2.Network
 
         private void ReaderRun()
         {
-            EndPoint endPoint = client.Client.RemoteEndPoint;
+            EndPoint endPoint;
+            try
+            {
+                endPoint = client.Client.RemoteEndPoint;
+            }
+            catch
+            {
+                LogWarning("Client stopped while starting reader.");
+                return;
+            }
 
             LogInfo($"Client {endPoint} connected");
             byte[] data = new byte[MaxLength];
@@ -83,7 +93,12 @@ namespace SneakRobber2.Network
             while (true)
             {
                 LogInfo($"Reading input from {endPoint}...");
-                int len = stream.Read(data, 0, MaxLength);
+                int len = 0;
+                try
+                {
+                    len = stream.Read(data, 0, MaxLength);
+                }
+                catch { }
                 if (len == 0) break;
                 System.Diagnostics.Debug.Assert(len < MaxLength);
                 string func;
@@ -150,5 +165,25 @@ namespace SneakRobber2.Network
         {
             Logger.LogError("RpcClient: " + s);
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    Stop();
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+        #endregion
     }
 }

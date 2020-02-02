@@ -2,9 +2,15 @@
 {
     public interface ILobbyToPlayer
     {
+        void OnConnected(string givenName);
+
         void OnPlayerJoined(string name, string room);
 
-        void OnPlayerLeaved(string name, string room);
+        void OnPlayerLeaved(string name);
+
+        void OnPlayerChangeRoom(string name, string room);
+
+        void OnPlayerChangeName(string oldName, string newName);
 
         void OnPlayerPrepared(string name);
 
