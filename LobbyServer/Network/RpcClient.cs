@@ -124,6 +124,7 @@ namespace SneakRobber2.Network
                 catch { }
                 if (len == 0) break;
                 System.Diagnostics.Debug.Assert(len == dataSize && dataSize < MaxLength);
+                // TODO: Try to get the full msg if len < dataSize. ie. more Read for this msg
 
                 string func;
                 object[] ps;
