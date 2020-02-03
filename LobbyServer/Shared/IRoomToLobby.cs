@@ -2,7 +2,7 @@
 {
     public interface IRoomToLobby
     {
-        void GameReady(string ip, int port, int token);
+        void GameReady(string roomName, int port, int token);
 
         void GameOver(int winner);
 

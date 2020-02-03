@@ -17,19 +17,32 @@ namespace SneakRobber2.Lobby
 
         private static Lobby instance;
         private Dictionary<EndPoint, PlayerData> players;
+        private Dictionary<string, RoomData> inGameRooms;
         private NameGenerator nameGen;
 
-        public RpcServerWithType<LobbyExecutor, IPlayerToLobby, ILobbyToPlayer> Server { get; private set; }
+        public RpcServerWithType<LobbyFEExecutor, IPlayerToLobby, ILobbyToPlayer> FrontendServer { get; private set; }
+
+        public RpcServerWithType<LobbyBEExecutor, IRoomToLobby, ILobbyToRoom> BackendServer { get; private set; }
 
         public Lobby()
         {
-            Server = new RpcServerWithType<LobbyExecutor, IPlayerToLobby, ILobbyToPlayer>();
-            Server.ClientConnected += OnClientConnected;
-            Server.ClientDisconnected += OnClientDisconnected;
-            Server.ClientSendFailed += OnClientSendFailed;
+            FrontendServer = new RpcServerWithType<LobbyFEExecutor, IPlayerToLobby, ILobbyToPlayer>();
+            FrontendServer.ClientConnected += OnClientConnected;
+            FrontendServer.ClientDisconnected += OnClientDisconnected;
+            FrontendServer.ClientSendFailed += OnClientSendFailed;
+            BackendServer = new RpcServerWithType<LobbyBEExecutor, IRoomToLobby, ILobbyToRoom>();
             players = new Dictionary<EndPoint, PlayerData>();
+            inGameRooms = new Dictionary<string, RoomData>();
             nameGen = new NameGenerator();
             instance = this;
+        }
+
+        public void Start(int frontendPort, int backendPort)
+        {
+            LogInfo($"Lobby starting...");
+            FrontendServer.Start(frontendPort);
+            BackendServer.Start(backendPort);
+            LogInfo($"Lobby started");
         }
 
         private void OnClientSendFailed(object sender, Utility.EventArg<EndPoint> e)
@@ -55,14 +68,14 @@ namespace SneakRobber2.Lobby
                 var res = players.TryAdd(e.Value, player);
                 Debug.Assert(res);
 
-                Server.InvokeTo(e.Value).OnConnected(player.Name, player.Room);
+                FrontendServer.InvokeTo(e.Value).OnConnected(player.Name, player.Room);
 
                 ForOthers(e.Value, (p) =>
                 {
                     // Tell new player other players' info
-                    Server.InvokeTo(e.Value).OnPlayerJoined(p.Value.Name, p.Value.Room);
+                    FrontendServer.InvokeTo(e.Value).OnPlayerJoined(p.Value.Name, p.Value.Room);
                     // Tell other player new player's info
-                    Server.InvokeTo(p.Key).OnPlayerJoined(player.Name, LobbyRoomName);
+                    FrontendServer.InvokeTo(p.Key).OnPlayerJoined(player.Name, LobbyRoomName);
                 });
             }
         }
@@ -78,7 +91,7 @@ namespace SneakRobber2.Lobby
 
                 ForOthers(e.Value, (p) =>
                 {
-                    Server.InvokeTo(p.Key).OnPlayerLeaved(player.Name);
+                    FrontendServer.InvokeTo(p.Key).OnPlayerLeaved(player.Name);
                 });
                 players.Remove(e.Value);
 
@@ -115,14 +128,7 @@ namespace SneakRobber2.Lobby
             }
         }
 
-        public void Start(int port)
-        {
-            LogInfo($"Lobby starting...");
-            Server.Start(port);
-            LogInfo($"Lobby started");
-        }
-
-        public class LobbyExecutor : IPlayerToLobby, IRpcContext
+        public class LobbyFEExecutor : IPlayerToLobby, IRpcContext
         {
             public EndPoint RemoteEndpoint { get; set; }
 
@@ -143,7 +149,7 @@ namespace SneakRobber2.Lobby
 
                     instance.ForOthers(RemoteEndpoint, (p) =>
                     {
-                        instance.Server.InvokeTo(p.Key).OnPlayerChangeName(oldName, name);
+                        instance.FrontendServer.InvokeTo(p.Key).OnPlayerChangeName(oldName, name);
                     });
                 }
             }
@@ -158,7 +164,7 @@ namespace SneakRobber2.Lobby
 
                     instance.ForOthers(RemoteEndpoint, (p) =>
                     {
-                        instance.Server.InvokeTo(p.Key).OnPlayerLeaved(player.Name);
+                        instance.FrontendServer.InvokeTo(p.Key).OnPlayerLeaved(player.Name);
                     });
 
                     instance.players.Remove(RemoteEndpoint);
@@ -179,14 +185,14 @@ namespace SneakRobber2.Lobby
 
                     instance.ForOthers(RemoteEndpoint, (p) =>
                     {
-                        instance.Server.InvokeTo(p.Key).OnPlayerChangeRoom(player.Name, room);
+                        instance.FrontendServer.InvokeTo(p.Key).OnPlayerChangeRoom(player.Name, room);
                     });
 
                     instance.ForOthersInRoom(RemoteEndpoint, room, (p) =>
                     {
                         if (p.Value.IsReady)
                         {
-                            instance.Server.InvokeTo(RemoteEndpoint).OnPlayerPrepared(p.Value.Name);
+                            instance.FrontendServer.InvokeTo(RemoteEndpoint).OnPlayerPrepared(p.Value.Name);
                         }
                     });
                 }
@@ -206,10 +212,20 @@ namespace SneakRobber2.Lobby
 
                     player.IsReady = true;
 
+                    int nPlayers = 1;  // Self
+                    bool prepared = true;
                     instance.ForOthersInRoom(RemoteEndpoint, player.Room, (p) =>
                     {
-                        instance.Server.InvokeTo(p.Key).OnPlayerPrepared(player.Name);
+                        instance.FrontendServer.InvokeTo(p.Key).OnPlayerPrepared(player.Name);
+                        nPlayers++;
+                        prepared &= p.Value.IsReady;
                     });
+                    if (nPlayers == 3 && prepared)
+                    {
+                        // Start Game
+                        LogInfo("===== Game Init =====");
+                        instance.inGameRooms[player.Room] = new RoomData();
+                    }
                 }
             }
 
@@ -225,8 +241,32 @@ namespace SneakRobber2.Lobby
 
                     instance.ForOthersInRoom(RemoteEndpoint, player.Room, (p) =>
                     {
-                        instance.Server.InvokeTo(p.Key).OnPlayerUnprepared(player.Name);
+                        instance.FrontendServer.InvokeTo(p.Key).OnPlayerUnprepared(player.Name);
                     });
+                }
+            }
+        }
+
+        public class LobbyBEExecutor : IRoomToLobby, IRpcContext
+        {
+            public EndPoint RemoteEndpoint { get; set; }
+
+            public void GameInterrupted(int code)
+            {
+                LogInfo($"{RemoteEndpoint} GameInterrupted");
+            }
+
+            public void GameOver(int winner)
+            {
+                LogInfo($"{RemoteEndpoint} GameOver, winner {winner}");
+            }
+
+            public void GameReady(string ip, int port, int token)
+            {
+                LogInfo($"{RemoteEndpoint} GameReady, {ip}:{port}, token: {token}");
+                lock (instance.Lock)
+                {
+
                 }
             }
         }
@@ -255,7 +295,10 @@ namespace SneakRobber2.Lobby
             {
                 if (disposing)
                 {
-                    Server.Dispose();
+                    FrontendServer.Dispose();
+                    FrontendServer.ClientConnected -= OnClientConnected;
+                    FrontendServer.ClientDisconnected -= OnClientDisconnected;
+                    FrontendServer.ClientSendFailed -= OnClientSendFailed;
                 }
                 disposedValue = true;
             }

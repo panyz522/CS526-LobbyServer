@@ -132,7 +132,7 @@ namespace LobbyUnitTest
             using RpcClientWithType<EmptyPlayerExecutor, ILobbyToPlayer, IPlayerToLobby> 
                 player1 = new RpcClientWithType<EmptyPlayerExecutor, ILobbyToPlayer, IPlayerToLobby>(),
                 player2 = new RpcClientWithType<EmptyPlayerExecutor, ILobbyToPlayer, IPlayerToLobby>();
-            lobby.Start(10001);
+            lobby.Start(10001, 10002);
             player1.StartAsync(LocalHost, 10001).Wait();
             player2.StartAsync(LocalHost, 10001).Wait();
         }
@@ -147,7 +147,7 @@ namespace LobbyUnitTest
             using var evt = new ManualResetEvent(false);
             this.evt = evt;
 
-            lobby.Start(10001);
+            lobby.Start(10001, 10002);
             player1.StartAsync(LocalHost, 10001).Wait();
             evt.WaitOne();
             evt.Reset();
