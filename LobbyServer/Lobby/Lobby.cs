@@ -17,6 +17,7 @@ namespace SneakRobber2.Lobby
 
         private static Lobby instance;
         private Dictionary<EndPoint, PlayerData> players;
+        private NameGenerator nameGen;
 
         public RpcServerWithType<LobbyExecutor, IPlayerToLobby, ILobbyToPlayer> Server { get; private set; }
 
@@ -27,6 +28,7 @@ namespace SneakRobber2.Lobby
             Server.ClientDisconnected += OnClientDisconnected;
             Server.ClientSendFailed += OnClientSendFailed;
             players = new Dictionary<EndPoint, PlayerData>();
+            nameGen = new NameGenerator();
             instance = this;
         }
 
@@ -46,7 +48,7 @@ namespace SneakRobber2.Lobby
                 LogInfo($"{nameof(OnClientConnected)} {e.Value}");
                 var player = new PlayerData
                 {
-                    Name = Guid.NewGuid().ToString(),
+                    Name = nameGen.Next(),
                     IsReady = false,
                     Room = LobbyRoomName
                 };
@@ -131,6 +133,10 @@ namespace SneakRobber2.Lobby
                 lock (instance.Lock)
                 {
                     var player = instance.players[RemoteEndpoint];
+                    if (player.Room != LobbyRoomName)
+                    {
+                        return; // Cannot change name in game rooms
+                    }
 
                     var oldName = player.Name;
                     player.Name = name;
@@ -169,10 +175,19 @@ namespace SneakRobber2.Lobby
 
                     var leavedRoom = player.Room;
                     player.Room = room;
+                    player.IsReady = false;
 
                     instance.ForOthers(RemoteEndpoint, (p) =>
                     {
                         instance.Server.InvokeTo(p.Key).OnPlayerChangeRoom(player.Name, room);
+                    });
+
+                    instance.ForOthersInRoom(RemoteEndpoint, room, (p) =>
+                    {
+                        if (p.Value.IsReady)
+                        {
+                            instance.Server.InvokeTo(RemoteEndpoint).OnPlayerPrepared(p.Value.Name);
+                        }
                     });
                 }
             }
@@ -184,6 +199,10 @@ namespace SneakRobber2.Lobby
                 lock (instance.Lock)
                 {
                     var player = instance.players[RemoteEndpoint];
+                    if (player.Room == LobbyRoomName)
+                    {
+                        return; // Cannot prepare in lobby
+                    }
 
                     player.IsReady = true;
 

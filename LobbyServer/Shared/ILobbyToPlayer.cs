@@ -16,7 +16,7 @@
 
         void OnPlayerUnprepared(string name);
 
-        void OnGameStarted(string ip, int port, string[] players);
+        void OnGameStarted(string ip, int port, string[] players, int token);
 
         void OnGameStartFailed(string err);
     }

@@ -201,7 +201,7 @@ namespace LobbyUnitTest
                 Log();
             }
 
-            public void OnGameStarted(string ip, int port, string[] players)
+            public void OnGameStarted(string ip, int port, string[] players, int token)
             {
                 Log();
             }
@@ -257,7 +257,7 @@ namespace LobbyUnitTest
                 Log();
             }
 
-            public void OnGameStarted(string ip, int port, string[] players)
+            public void OnGameStarted(string ip, int port, string[] players, int token)
             {
                 Log();
             }
@@ -313,7 +313,7 @@ namespace LobbyUnitTest
                 Log(givenName);
             }
 
-            public void OnGameStarted(string ip, int port, string[] players)
+            public void OnGameStarted(string ip, int port, string[] players, int token)
             {
                 Log();
             }

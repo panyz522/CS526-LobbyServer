@@ -1,5 +1,6 @@
 ﻿using Castle.DynamicProxy;
 using SneakRobber2.Lobby;
+using SneakRobber2.Utility;
 using System;
 using System.Dynamic;
 using System.IO;
