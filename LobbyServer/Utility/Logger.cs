@@ -11,41 +11,41 @@ namespace SneakRobber2.Utility
     {
         private static Func<object, string> format = (s) => $"[{DateTime.Now}] {s}";
 
-        private static Action<object> logInfo =
+        private static Action<string> logInfo =
 #if UNITY_EDITOR || UNITY_STANDALONE
-            (s) => { Debug.Log(format(s)); };
+            (s) => { Debug.Log(s); };
 #else
             (s) =>
             {
-                Console.WriteLine(format(s));
+                Console.WriteLine(s);
             };
 #endif
-        private static Action<object> logWarning =
+        private static Action<string> logWarning =
 #if UNITY_EDITOR || UNITY_STANDALONE
-            (s) => { Debug.LogWarning(format(s)); };
+            (s) => { Debug.LogWarning(s); };
 #else
             (s) =>
             {
                 var color = Console.BackgroundColor;
                 Console.BackgroundColor = ConsoleColor.DarkYellow;
-                Console.WriteLine(format(s));
+                Console.WriteLine(s);
                 Console.BackgroundColor = color;
             };
 #endif
-        private static Action<object> logError =
+        private static Action<string> logError =
 #if UNITY_EDITOR || UNITY_STANDALONE
-            (s) => { Debug.LogError(format(s)); };
+            (s) => { Debug.LogError(s); };
 #else
             (s) =>
             {
                 var color = Console.BackgroundColor;
                 Console.BackgroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine(format(s));
+                Console.WriteLine(s);
                 Console.BackgroundColor = color;
             };
 #endif
 
-        public static void SetLogger(Action<object> log)
+        public static void SetLogger(Action<string> log)
         {
             Logger.logInfo = log;
             Logger.logWarning = log;
@@ -54,17 +54,17 @@ namespace SneakRobber2.Utility
 
         public static void LogInfo(object obj)
         {
-            logInfo(obj);
+            logInfo(format(obj));
         }
 
         public static void LogWarning(object obj)
         {
-            logWarning(obj);
+            logWarning(format(obj));
         }
 
         public static void LogError(object obj)
         {
-            logError(obj);
+            logError(format(obj));
         }
     }
 }

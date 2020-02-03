@@ -117,14 +117,20 @@ namespace SneakRobber2.Network
                 catch { }
                 if (len == 0) break;
                 int dataSize = BitConverter.ToInt32(data, 0);
-                try
+                len = 0;
+                int curLen = 0;
+                while (len < dataSize)
                 {
-                    len = stream.Read(data, 0, dataSize);
+                    try
+                    {
+                        curLen = stream.Read(data, len, dataSize - len);
+                        len += curLen;
+                    }
+                    catch { }
+                    if (curLen == 0) break;
                 }
-                catch { }
-                if (len == 0) break;
+                if (curLen == 0) break;
                 System.Diagnostics.Debug.Assert(len == dataSize && dataSize < MaxLength);
-                // TODO: Try to get the full msg if len < dataSize. ie. more Read for this msg
 
                 string func;
                 object[] ps;
@@ -147,7 +153,7 @@ namespace SneakRobber2.Network
                         }
                     )
                 );
-                LogInfo($"Reading input from {endPoint} finished. Firing event for {func} finished.");
+                //LogInfo($"Reading input from {endPoint} finished. Firing event for {func} finished.");
             }
             LogInfo($"Client {endPoint} disconnected");
         }

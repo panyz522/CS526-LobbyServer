@@ -18,7 +18,7 @@ namespace SneakRobber2.Network
 
         private Task netTask;
         private Dictionary<EndPoint, Task> netClientTasks;
-        private Dictionary<EndPoint, TcpClient> remoteClients;
+        private ConcurrentDictionary<EndPoint, TcpClient> remoteClients;
         private TcpListener listener;
         private BlockingCollection<KeyValuePair<EndPoint, byte[]>> sendQ;  // TODO: Use multi sendQ for all clients
         private Task sendTask;
@@ -39,8 +39,8 @@ namespace SneakRobber2.Network
 
             sendQ?.Dispose();
             sendQ = new BlockingCollection<KeyValuePair<EndPoint, byte[]>>();
-            remoteClients = new Dictionary<EndPoint, TcpClient>();
-            netClientTasks = new Dictionary<EndPoint, Task>();
+            remoteClients = new ConcurrentDictionary<EndPoint, TcpClient>();
+            netClientTasks = new Dictionary<EndPoint, Task>();  // NOTE: Reserved for future
             listener = new TcpListener(IPAddress.Any, port);
             listener.Start();
             sendTask = Task.Run(SenderRun);
@@ -79,7 +79,7 @@ namespace SneakRobber2.Network
             }
             System.Diagnostics.Debug.Assert(data.Length < MaxLength);
             sendQ.Add(new KeyValuePair<EndPoint, byte[]>(endPoint, data));
-            LogInfo($"Queued msg to {endPoint} for func {func}");
+            //LogInfo($"Queued msg to {endPoint} for func {func}");
         }
 
         private void ListenerRun()
@@ -88,11 +88,11 @@ namespace SneakRobber2.Network
             {
                 while (true)
                 {
-                    LogInfo($"Waiting for connection... Current connected {remoteClients.Count}");
+                    LogInfo($"Waiting for connection... Currently connected {remoteClients.Count}");
                     var client = listener.AcceptTcpClient();
                     remoteClients[client.Client.RemoteEndPoint] = client;
                     ClientConnected?.Invoke(this, new EventArg<EndPoint>(client.Client.RemoteEndPoint));
-                    netClientTasks[client.Client.RemoteEndPoint] = Task.Run(() => { ReaderRun(client); });
+                    /*netClientTasks[client.Client.RemoteEndPoint] = */Task.Run(() => { ReaderRun(client); });
                 }
             }
             catch (SocketException) { }
@@ -120,12 +120,19 @@ namespace SneakRobber2.Network
                 catch { }
                 if (len == 0) break;
                 int dataSize = BitConverter.ToInt32(data, 0);
-                try
+                len = 0;
+                int curLen = 0;
+                while (len < dataSize)
                 {
-                    len = stream.Read(data, 0, dataSize);
+                    try
+                    {
+                        curLen = stream.Read(data, len, dataSize - len);
+                        len += curLen;
+                    }
+                    catch { }
+                    if (curLen == 0) break;
                 }
-                catch { }
-                if (len == 0) break;
+                if (curLen == 0) break;
                 System.Diagnostics.Debug.Assert(len == dataSize && dataSize < MaxLength);
 
                 string func;
@@ -149,10 +156,10 @@ namespace SneakRobber2.Network
                         }
                     )
                 );
-                LogInfo($"Reading input from {endPoint} finished. Firing event finished.");
+                //LogInfo($"Reading input from {endPoint} finished. Firing event finished.");
             }
             LogInfo($"Client {endPoint} disconnected");
-            remoteClients.Remove(endPoint);
+            remoteClients.TryRemove(endPoint, out var _);
             ClientDisconnected?.Invoke(this, new EventArg<EndPoint>(endPoint));
         }
 
@@ -168,11 +175,11 @@ namespace SneakRobber2.Network
                         var stream = remoteClients[item.Key].GetStream();
                         stream.Write(BitConverter.GetBytes(item.Value.Length), 0, sizeof(int));
                         stream.Write(item.Value, 0, item.Value.Length);
-                        LogInfo($"Dequeued a msg and sent to {item.Key}");
+                        //LogInfo($"Dequeued a msg and sent to {item.Key}");
                     }
                     catch
                     {
-                        remoteClients.Remove(item.Key);
+                        remoteClients.TryRemove(item.Key, out var _);
                         ClientSendFailed?.Invoke(this, new EventArg<EndPoint>(item.Key));
                     }
                 }
