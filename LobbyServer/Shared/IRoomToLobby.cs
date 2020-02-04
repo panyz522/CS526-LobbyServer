@@ -4,8 +4,8 @@
     {
         void GameReady(string roomName, int port, int token);
 
-        void GameOver(int winner);
+        void GameOver(string roomName, int winner);
 
-        void GameInterrupted(int code);
+        void GameInterrupted(string roomName, int code);
     }
 }

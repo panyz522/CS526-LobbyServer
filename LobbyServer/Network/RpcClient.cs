@@ -177,7 +177,7 @@ namespace SneakRobber2.Network
                     }
                 }
             }
-            catch (ObjectDisposedException) { }
+            catch (Exception) { }
             LogInfo("Sender stopped.");
         }
 

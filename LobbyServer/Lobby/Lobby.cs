@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Text;
 
@@ -13,12 +14,14 @@ namespace SneakRobber2.Lobby
     public class Lobby : IDisposable
     {
         public const string LobbyRoomName = "Lobby";
+        public const string StartCmd = @"c:\Users\Turnip\source\repos\CS526_SneakRobber\ServerBuild\SneakNight.exe";
         public object Lock { get; } = new object();
 
         private static Lobby instance;
         private Dictionary<EndPoint, PlayerData> players;
         private Dictionary<string, RoomData> inGameRooms;
         private NameGenerator nameGen;
+        private string localIp;
 
         public RpcServerWithType<LobbyFEExecutor, IPlayerToLobby, ILobbyToPlayer> FrontendServer { get; private set; }
 
@@ -37,11 +40,12 @@ namespace SneakRobber2.Lobby
             instance = this;
         }
 
-        public void Start(int frontendPort, int backendPort)
+        public void Start(int frontendPort, int backendPort, string localIp = "127.0.0.1")
         {
             LogInfo($"Lobby starting...");
             FrontendServer.Start(frontendPort);
             BackendServer.Start(backendPort);
+            this.localIp = localIp;
             LogInfo($"Lobby started");
         }
 
@@ -122,6 +126,17 @@ namespace SneakRobber2.Lobby
             foreach (var p in players)
             {
                 if (senderRoom == p.Value.Room && p.Key != sender)
+                {
+                    action(p);
+                }
+            }
+        }
+
+        private void ForAllInRoom(string room, Action<KeyValuePair<EndPoint, PlayerData>> action)
+        {
+            foreach (var p in players)
+            {
+                if (room == p.Value.Room)
                 {
                     action(p);
                 }
@@ -225,6 +240,16 @@ namespace SneakRobber2.Lobby
                         // Start Game
                         LogInfo("===== Game Init =====");
                         instance.inGameRooms[player.Room] = new RoomData();
+
+                        ProcessStartInfo pInfo = new ProcessStartInfo
+                        {
+                            UseShellExecute = true,
+                            CreateNoWindow = false,
+                            WindowStyle = ProcessWindowStyle.Normal,
+                            FileName = StartCmd,
+                            Arguments = "-rname " + player.Room
+                        };
+                        Process.Start(pInfo);
                     }
                 }
             }
@@ -251,22 +276,53 @@ namespace SneakRobber2.Lobby
         {
             public EndPoint RemoteEndpoint { get; set; }
 
-            public void GameInterrupted(int code)
+            public void GameInterrupted(string roomName, int code)
             {
-                LogInfo($"{RemoteEndpoint} GameInterrupted");
-            }
-
-            public void GameOver(int winner)
-            {
-                LogInfo($"{RemoteEndpoint} GameOver, winner {winner}");
-            }
-
-            public void GameReady(string ip, int port, int token)
-            {
-                LogInfo($"{RemoteEndpoint} GameReady, {ip}:{port}, token: {token}");
+                LogWarning($"{RemoteEndpoint} {roomName} GameInterrupted {code}");
                 lock (instance.Lock)
                 {
+                    instance.ForAllInRoom(roomName, (p) =>
+                    {
+                        p.Value.IsReady = false;
+                    });
+                    instance.inGameRooms.Remove(roomName);
+                }
+            }
 
+            public void GameOver(string roomName, int winner)
+            {
+                LogInfo($"{RemoteEndpoint} {roomName} GameOver, winner {winner}");
+                lock (instance.Lock)
+                {
+                    instance.ForAllInRoom(roomName, (p) =>
+                    {
+                        p.Value.IsReady = false;
+                    });
+                    instance.inGameRooms.Remove(roomName);
+                }
+            }
+
+            public void GameReady(string name, int port, int tokenBase)
+            {
+                LogInfo($"{RemoteEndpoint} GameReady, room {name} at {port}, token: {tokenBase}");
+                lock (instance.Lock)
+                {
+                    var room = instance.inGameRooms[name];
+                    room.Port = port;
+                    room.Token = tokenBase;
+                    var players = new List<KeyValuePair<EndPoint, PlayerData>>();
+                    instance.ForAllInRoom(name, (p) =>
+                    {
+                        players.Add(p);
+                    });
+                    Debug.Assert(players.Count == 3);
+                    var playerNames = players.Select((p) => p.Value.Name).ToArray();
+
+                    var token = tokenBase;
+                    foreach (var player in players)
+                    {
+                        instance.FrontendServer.InvokeTo(player.Key).OnGameStarted(instance.localIp, port, playerNames, token++);
+                    }
                 }
             }
         }
