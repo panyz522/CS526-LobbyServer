@@ -307,22 +307,36 @@ namespace SneakRobber2.Lobby
                 LogInfo($"{RemoteEndpoint} GameReady, room {name} at {port}, token: {tokenBase}");
                 lock (instance.Lock)
                 {
-                    var room = instance.inGameRooms[name];
-                    room.Port = port;
-                    room.Token = tokenBase;
                     var players = new List<KeyValuePair<EndPoint, PlayerData>>();
                     instance.ForAllInRoom(name, (p) =>
                     {
                         players.Add(p);
                     });
                     Debug.Assert(players.Count == 3);
+                    
                     var playerNames = players.Select((p) => p.Value.Name).ToArray();
+                    Shuffle(playerNames);
+                    var room = instance.inGameRooms[name];
+                    room.Port = port;
+                    room.Token = tokenBase;
+                    room.Players = playerNames;
 
-                    var token = tokenBase;
                     foreach (var player in players)
                     {
-                        instance.FrontendServer.InvokeTo(player.Key).OnGameStarted(instance.localIp, port, playerNames, token++);
+                        instance.FrontendServer.InvokeTo(player.Key).OnGameStarted(instance.localIp, port, playerNames, tokenBase);
                     }
+                }
+            }
+            public static void Shuffle<T>(T[] array)
+            {
+                int n = array.Length;
+                var rng = new Random();
+                while (n > 1)
+                {
+                    int k = rng.Next(n--);
+                    T temp = array[n];
+                    array[n] = array[k];
+                    array[k] = temp;
                 }
             }
         }

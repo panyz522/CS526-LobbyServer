@@ -9,5 +9,6 @@ namespace SneakRobber2.Lobby
         public int Token { get; set; }
         public string Ip { get; set; }
         public int Port { get; set; }
+        public string[] Players { get; set; }
     }
 }
