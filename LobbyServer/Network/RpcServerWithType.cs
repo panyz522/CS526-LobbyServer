@@ -8,6 +8,13 @@ using System.Threading;
 
 namespace SneakRobber2.Network
 {
+    /// <summary>
+    /// RPC server.
+    /// </summary>
+    /// <typeparam name="TExecutor">The type of the executor. Executor is called when server received a RPC from a client.</typeparam>
+    /// <typeparam name="IExecutorRpc">The type of the executor RPC.</typeparam>
+    /// <typeparam name="IInvokerRpc">The type of the invoker RPC.</typeparam>
+    /// <seealso cref="SneakRobber2.Network.RpcServer" />
     public class RpcServerWithType<TExecutor, IExecutorRpc, IInvokerRpc> : RpcServer
         where TExecutor : IExecutorRpc, IRpcContext, new()
         where IInvokerRpc : class
@@ -31,6 +38,11 @@ namespace SneakRobber2.Network
             typeof(TExecutor).GetMethod(func).Invoke(callObj, ps);
         }
 
+        /// <summary>
+        /// Invokes to a client.
+        /// </summary>
+        /// <param name="endPoint">The end point.</param>
+        /// <returns>The invoker.</returns>
         public IInvokerRpc InvokeTo(EndPoint endPoint)
         {
             localEndPoint.Value = endPoint;
