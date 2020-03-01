@@ -14,7 +14,8 @@ namespace SneakRobber2.Lobby
     public class Lobby : IDisposable
     {
         public const string LobbyRoomName = "Lobby";
-        public const string StartCmd = @"c:\Users\Turnip\source\repos\CS526_SneakRobber\ServerBuild\SneakNight.exe";
+        //public const string StartCmd = @"c:\Users\Turnip\source\repos\CS526_SneakRobber\ServerBuild\SneakNight.exe";
+        public const string StartCmd = @"C:\Users\panyz522\Desktop\ServerBuild\SneakNight.exe";
         public object Lock { get; } = new object();
 
         private static Lobby instance;
@@ -67,7 +68,8 @@ namespace SneakRobber2.Lobby
                 {
                     Name = nameGen.Next(),
                     IsReady = false,
-                    Room = LobbyRoomName
+                    Room = LobbyRoomName,
+                    Role = 0 // Lobby dose not care about player's role
                 };
                 var res = players.TryAdd(e.Value, player);
                 Debug.Assert(res);
@@ -77,9 +79,9 @@ namespace SneakRobber2.Lobby
                 ForOthers(e.Value, (p) =>
                 {
                     // Tell new player other players' info
-                    FrontendServer.InvokeTo(e.Value).OnPlayerJoined(p.Value.Name, p.Value.Room);
+                    FrontendServer.InvokeTo(e.Value).OnPlayerJoined(p.Value.Name, p.Value.Room, p.Value.Role);
                     // Tell other player new player's info
-                    FrontendServer.InvokeTo(p.Key).OnPlayerJoined(player.Name, LobbyRoomName);
+                    FrontendServer.InvokeTo(p.Key).OnPlayerJoined(player.Name, LobbyRoomName, player.Role);
                 });
             }
         }
@@ -198,11 +200,29 @@ namespace SneakRobber2.Lobby
                     player.Room = room;
                     player.IsReady = false;
 
+                    // Update player's role in the new room
+                    if (room == LobbyRoomName)
+                        player.Role = 0;
+                    else
+                    {
+                        bool[] usedRoles = new bool[3];
+                        instance.ForOthersInRoom(RemoteEndpoint, room, (p) =>
+                        {
+                            Debug.Assert(!usedRoles[p.Value.Role], $"{room} contains repeated role {p.Value.Role}");
+                            usedRoles[p.Value.Role] = true;
+                        });
+                        int unusedRole = Array.IndexOf(usedRoles, false);
+                        Debug.Assert(unusedRole >= 0, $"{room} is full");
+                        player.Role = unusedRole;
+                    }
+
+                    // Notify others the player has changed to another room
                     instance.ForOthers(RemoteEndpoint, (p) =>
                     {
-                        instance.FrontendServer.InvokeTo(p.Key).OnPlayerChangeRoom(player.Name, room);
+                        instance.FrontendServer.InvokeTo(p.Key).OnPlayerChangeRoom(player.Name, room, player.Role);
                     });
 
+                    // Notify the new player in room with other players' status
                     instance.ForOthersInRoom(RemoteEndpoint, room, (p) =>
                     {
                         if (p.Value.IsReady)
@@ -313,9 +333,13 @@ namespace SneakRobber2.Lobby
                         players.Add(p);
                     });
                     Debug.Assert(players.Count == 3);
-                    
-                    var playerNames = players.Select((p) => p.Value.Name).ToArray();
-                    Shuffle(playerNames);
+
+                    var playerNames = new string[3];
+                    foreach (var player in players)
+                    {
+                        Debug.Assert(playerNames[player.Value.Role] == null, $"Duplicated role found {player.Value.Role} for player {player.Value.Name}");
+                        playerNames[player.Value.Role] = player.Value.Name;
+                    }
                     var room = instance.inGameRooms[name];
                     room.Port = port;
                     room.Token = tokenBase;
@@ -365,10 +389,11 @@ namespace SneakRobber2.Lobby
             {
                 if (disposing)
                 {
-                    FrontendServer.Dispose();
                     FrontendServer.ClientConnected -= OnClientConnected;
                     FrontendServer.ClientDisconnected -= OnClientDisconnected;
                     FrontendServer.ClientSendFailed -= OnClientSendFailed;
+                    FrontendServer.Dispose();
+                    BackendServer.Dispose();
                 }
                 disposedValue = true;
             }

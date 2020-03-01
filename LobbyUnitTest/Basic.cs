@@ -120,7 +120,7 @@ namespace LobbyUnitTest
             evt.WaitOne();
             evt.Reset();
 
-            sc.server.InvokeTo(ep).OnPlayerJoined("Player1", "Lobby");
+            sc.server.InvokeTo(ep).OnPlayerJoined("Player1", "Lobby", 0);
             evt.WaitOne();
             evt.Reset();
         }
@@ -216,12 +216,12 @@ namespace LobbyUnitTest
                 throw new NotImplementedException();
             }
 
-            public void OnPlayerChangeRoom(string name, string room)
+            public void OnPlayerChangeRoom(string name, string room, int role)
             {
                 throw new NotImplementedException();
             }
 
-            public void OnPlayerJoined(string name, string room)
+            public void OnPlayerJoined(string name, string room, int role)
             {
                 Log();
                 instance.evt.Set();
@@ -272,12 +272,12 @@ namespace LobbyUnitTest
                 Log();
             }
 
-            public void OnPlayerChangeRoom(string name, string room)
+            public void OnPlayerChangeRoom(string name, string room, int role)
             {
                 Log();
             }
 
-            public void OnPlayerJoined(string name, string room)
+            public void OnPlayerJoined(string name, string room, int role)
             {
                 Log();
             }
@@ -328,12 +328,12 @@ namespace LobbyUnitTest
                 Log();
             }
 
-            public void OnPlayerChangeRoom(string name, string room)
+            public void OnPlayerChangeRoom(string name, string room, int role)
             {
                 Log();
             }
 
-            public void OnPlayerJoined(string name, string room)
+            public void OnPlayerJoined(string name, string room, int role)
             {
                 Log();
             }

@@ -10,6 +10,8 @@ namespace SneakRobber2.Lobby
 
         public string Room { get; set; }
 
+        public int Role { get; set; }
+
         public bool IsReady { get; set; }
     }
 }

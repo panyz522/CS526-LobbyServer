@@ -14,7 +14,8 @@
         /// </summary>
         /// <param name="name">The player's name.</param>
         /// <param name="room">The room.</param>
-        void OnPlayerJoined(string name, string room);
+        /// <param name="role">The player's role.</param>
+        void OnPlayerJoined(string name, string room, int role);
 
         /// <summary>
         /// Called when player leaved.
@@ -27,7 +28,7 @@
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="room">The room.</param>
-        void OnPlayerChangeRoom(string name, string room);
+        void OnPlayerChangeRoom(string name, string room, int role);
 
         /// <summary>
         /// Called when player change name.

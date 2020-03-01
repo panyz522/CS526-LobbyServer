@@ -14,7 +14,7 @@ namespace LobbyServer
         static void Main(string[] args)
         {
             using var lobby = new Lobby();
-            lobby.Start(10001, 10002);
+            lobby.Start(10001, 10002, "40.78.5.61");
             Console.ReadLine();
         }
     }
