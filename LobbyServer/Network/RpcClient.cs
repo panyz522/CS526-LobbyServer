@@ -183,19 +183,21 @@ namespace SneakRobber2.Network
 
         protected virtual void OnReceivedData(EndPoint endPoint, string func, object[] ps) { }
 
+        protected static Logger<RpcClient> Logger => Logger<RpcClient>.Instance;
+
         protected void LogInfo(object s)
         {
-            Logger.LogInfo("RpcClient: " + s);
+            Logger.LogInfo(s);
         }
 
         protected void LogWarning(object s)
         {
-            Logger.LogWarning("RpcClient: " + s);
+            Logger.LogWarning(s);
         }
 
         protected void LogError(object s)
         {
-            Logger.LogError("RpcClient: " + s);
+            Logger.LogError(s);
         }
 
         #region IDisposable Support

@@ -14,8 +14,8 @@ namespace SneakRobber2.Lobby
     public class Lobby : IDisposable
     {
         public const string LobbyRoomName = "Lobby";
-        //public const string StartCmd = @"c:\Users\Turnip\source\repos\CS526_SneakRobber\ServerBuild\SneakNight.exe";
-        public const string StartCmd = @"C:\Users\panyz522\Desktop\ServerBuild\SneakNight.exe";
+        public const string StartCmd = @"c:\Users\Turnip\source\repos\CS526_SneakRobber\ServerBuild\SneakNight_server.exe";
+        //public const string StartCmd = @"C:\Users\panyz522\Desktop\ServerBuild\SneakNight.exe";
         public object Lock { get; } = new object();
 
         private static Lobby instance;
@@ -217,7 +217,7 @@ namespace SneakRobber2.Lobby
                     }
 
                     // Notify others the player has changed to another room
-                    instance.ForOthers(RemoteEndpoint, (p) =>
+                    instance.ForAll((p) =>
                     {
                         instance.FrontendServer.InvokeTo(p.Key).OnPlayerChangeRoom(player.Name, room, player.Role);
                     });
@@ -365,19 +365,21 @@ namespace SneakRobber2.Lobby
             }
         }
 
+        protected static Logger<Lobby> Logger => Logger<Lobby>.Instance;
+
         protected static void LogInfo(object s)
         {
-            Logger.LogInfo("Lobby: " + s);
+            Logger.LogInfo(s);
         }
 
         protected static void LogWarning(object s)
         {
-            Logger.LogWarning("Lobby: " + s);
+            Logger.LogWarning(s);
         }
 
         protected static void LogError(object s)
         {
-            Logger.LogError("Lobby: " + s);
+            Logger.LogError(s);
         }
 
         #region IDisposable Support

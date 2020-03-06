@@ -1,15 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 #if UNITY_EDITOR || UNITY_STANDALONE
 using UnityEngine;
 #endif
 
 namespace SneakRobber2.Utility
 {
-    public static class Logger
+    public class Logger<T>
     {
-        private static Func<object, string> format = (s) => $"[{DateTime.Now}] {s}";
+#if UNITY_EDITOR || UNITY_STANDALONE
+        public static string formatStr = "{LoggerName}: {Log}";
+#else
+        public static string formatStr = "[{Time}] {LoggerName}: {Log}";
+#endif
+
+        public static Logger<T> Instance = new Logger<T>();
+        private static readonly string loggerName = typeof(T).Name;
+        private static Func<object, string> format =
+            (s) => formatStr
+                .Replace("{Time}", DateTime.Now.ToString("HH:mm:ss.fff"))
+                .Replace("{LoggerName}", loggerName)
+                .Replace("{Log}", s.ToString());
 
         private static Action<string> logInfo =
 #if UNITY_EDITOR || UNITY_STANDALONE
@@ -47,22 +57,22 @@ namespace SneakRobber2.Utility
 
         public static void SetLogger(Action<string> log)
         {
-            Logger.logInfo = log;
-            Logger.logWarning = log;
-            Logger.logError = log;
+            logInfo = log;
+            logWarning = log;
+            logError = log;
         }
 
-        public static void LogInfo(object obj)
+        public void LogInfo(object obj)
         {
             logInfo(format(obj));
         }
 
-        public static void LogWarning(object obj)
+        public void LogWarning(object obj)
         {
             logWarning(format(obj));
         }
 
-        public static void LogError(object obj)
+        public void LogError(object obj)
         {
             logError(format(obj));
         }

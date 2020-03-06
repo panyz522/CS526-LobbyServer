@@ -188,21 +188,23 @@ namespace SneakRobber2.Network
             LogInfo("Sender stopped.");
         }
 
+        protected static Logger<RpcServer> Logger => Logger<RpcServer>.Instance;
+
         protected virtual void OnReceivedData(EndPoint endPoint, string func, object[] ps) { }
 
         protected void LogInfo(object s)
         {
-            Logger.LogInfo("RpcServer: " + s);
+            Logger.LogInfo(s);
         }
 
         protected void LogWarning(object s)
         {
-            Logger.LogWarning("RpcServer: " + s);
+            Logger.LogWarning(s);
         }
 
         protected void LogError(object s)
         {
-            Logger.LogError("RpcServer: " + s);
+            Logger.LogError(s);
         }
 
         #region IDisposable Support
