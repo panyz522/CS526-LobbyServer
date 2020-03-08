@@ -14,7 +14,10 @@ namespace LobbyServer
         static void Main(string[] args)
         {
             using var lobby = new Lobby();
-            lobby.Start(10001, 10002, "40.78.5.61");
+            string path = CmdHelper.GetArg("-path");
+            string ipIn = CmdHelper.GetArg("-ip");
+            string ip = ipIn == null ? "127.0.0.1" : ipIn;
+            lobby.Start(10001, 10002, ip, path);
             Console.ReadLine();
         }
     }

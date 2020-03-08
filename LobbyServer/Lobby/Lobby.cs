@@ -14,7 +14,6 @@ namespace SneakRobber2.Lobby
     public class Lobby : IDisposable
     {
         public const string LobbyRoomName = "Lobby";
-        public const string StartCmd = @"c:\Users\Turnip\source\repos\CS526_SneakRobber\ServerBuild\SneakNight_server.exe";
         //public const string StartCmd = @"C:\Users\panyz522\Desktop\ServerBuild\SneakNight.exe";
         public object Lock { get; } = new object();
 
@@ -22,7 +21,8 @@ namespace SneakRobber2.Lobby
         private Dictionary<EndPoint, PlayerData> players;
         private Dictionary<string, RoomData> inGameRooms;
         private NameGenerator nameGen;
-        private string localIp;
+        private string localIp = "127.0.0.1";
+        private string serverPath = @"c:\Users\Turnip\source\repos\CS526_SneakRobber\ServerBuild\SneakNight_server.exe";
 
         public RpcServerWithType<LobbyFEExecutor, IPlayerToLobby, ILobbyToPlayer> FrontendServer { get; private set; }
 
@@ -41,13 +41,16 @@ namespace SneakRobber2.Lobby
             instance = this;
         }
 
-        public void Start(int frontendPort, int backendPort, string localIp = "127.0.0.1")
+        public void Start(int frontendPort, int backendPort, string localIp = null, string serverPath = null)
         {
             LogInfo($"Lobby starting...");
             FrontendServer.Start(frontendPort);
             BackendServer.Start(backendPort);
-            this.localIp = localIp;
-            LogInfo($"Lobby started");
+            if (localIp != null)
+                this.localIp = localIp;
+            if (serverPath != null)
+                this.serverPath = serverPath;
+            LogInfo($"Lobby started with ip={this.localIp}, path={this.serverPath}");
         }
 
         private void OnClientSendFailed(object sender, Utility.EventArg<EndPoint> e)
@@ -266,7 +269,7 @@ namespace SneakRobber2.Lobby
                             UseShellExecute = true,
                             CreateNoWindow = false,
                             WindowStyle = ProcessWindowStyle.Normal,
-                            FileName = StartCmd,
+                            FileName = instance.serverPath,
                             Arguments = "-rname " + player.Room
                         };
                         Process.Start(pInfo);

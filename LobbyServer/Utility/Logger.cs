@@ -7,21 +7,40 @@ namespace SneakRobber2.Utility
 {
     public class Logger<T>
     {
+        public static Logger<T> Instance = new Logger<T>();
+        private static readonly string loggerName = typeof(T).Name;
+
+        public void LogInfo(object obj)
+        {
+            LoggerBase.logInfo(LoggerBase.format(obj, loggerName));
+        }
+
+        public void LogWarning(object obj)
+        {
+            LoggerBase.logWarning(LoggerBase.format(obj, loggerName));
+        }
+
+        public void LogError(object obj)
+        {
+            LoggerBase.logWarning(LoggerBase.format(obj, loggerName));
+        }
+    }
+
+    public class LoggerBase
+    {
 #if UNITY_EDITOR || UNITY_STANDALONE
         public static string formatStr = "{LoggerName}: {Log}";
 #else
         public static string formatStr = "[{Time}] {LoggerName}: {Log}";
 #endif
 
-        public static Logger<T> Instance = new Logger<T>();
-        private static readonly string loggerName = typeof(T).Name;
-        private static Func<object, string> format =
-            (s) => formatStr
+        public static Func<object, string, string> format =
+            (s, loggerName) => formatStr
                 .Replace("{Time}", DateTime.Now.ToString("HH:mm:ss.fff"))
                 .Replace("{LoggerName}", loggerName)
                 .Replace("{Log}", s.ToString());
 
-        private static Action<string> logInfo =
+        public static Action<string> logInfo =
 #if UNITY_EDITOR || UNITY_STANDALONE
             (s) => { Debug.Log(s); };
 #else
@@ -30,7 +49,7 @@ namespace SneakRobber2.Utility
                 Console.WriteLine(s);
             };
 #endif
-        private static Action<string> logWarning =
+        public static Action<string> logWarning =
 #if UNITY_EDITOR || UNITY_STANDALONE
             (s) => { Debug.LogWarning(s); };
 #else
@@ -42,7 +61,7 @@ namespace SneakRobber2.Utility
                 Console.BackgroundColor = color;
             };
 #endif
-        private static Action<string> logError =
+        public static Action<string> logError =
 #if UNITY_EDITOR || UNITY_STANDALONE
             (s) => { Debug.LogError(s); };
 #else
@@ -55,26 +74,11 @@ namespace SneakRobber2.Utility
             };
 #endif
 
-        public static void SetLogger(Action<string> log)
+        public static void SetAllLogger(Action<string> log)
         {
             logInfo = log;
             logWarning = log;
             logError = log;
-        }
-
-        public void LogInfo(object obj)
-        {
-            logInfo(format(obj));
-        }
-
-        public void LogWarning(object obj)
-        {
-            logWarning(format(obj));
-        }
-
-        public void LogError(object obj)
-        {
-            logError(format(obj));
         }
     }
 }

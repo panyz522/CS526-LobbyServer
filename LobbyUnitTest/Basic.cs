@@ -47,7 +47,7 @@ namespace LobbyUnitTest
         {
             this.output = output;
             Basic.instance = this;
-            Logger.SetLogger((s) => output.WriteLine(s.ToString()));
+            LoggerBase.SetAllLogger((s) => output.WriteLine(s.ToString()));
         }
 
         [Fact]
