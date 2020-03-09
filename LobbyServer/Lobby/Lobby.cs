@@ -272,7 +272,8 @@ namespace SneakRobber2.Lobby
                             FileName = instance.serverPath,
                             Arguments = "-rname " + player.Room
                         };
-                        Process.Start(pInfo);
+                        var startInfo = Process.Start(pInfo);
+                        Logger.LogInfo($"Server process started pid={startInfo.Id}");
                     }
                 }
             }
