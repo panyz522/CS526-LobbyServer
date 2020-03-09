@@ -1,1 +1,1 @@
-dotnet.exe $PSScriptRoot\LobbyServer\bin\Debug\netcoreapp3.1\LobbyServer.dll -ip 127.0.0.1 -path "c:\Users\Turnip\source\repos\CS526_SneakRobber\Build_Server\Server.exe"
+dotnet.exe $PSScriptRoot\LobbyServer\bin\Debug\netcoreapp3.1\LobbyServer.dll -ip 40.78.5.61 -path "C:\CS526\CS526_SneakRobber\Build_Server\Server.exe"
