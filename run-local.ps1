@@ -1,0 +1,1 @@
+dotnet.exe $PSScriptRoot\LobbyServer\bin\Debug\netcoreapp3.1\LobbyServer.dll -ip 192.168.1.3 -path "c:\Users\Turnip\source\repos\CS526_SneakRobber\Build_Server\Server.exe"

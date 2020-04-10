@@ -1,7 +1,22 @@
-﻿using Castle.DynamicProxy;
+﻿//#define FORCE_USE_DYNAMIC
+//#define FORCE_USE_CLASS
+
+#if FORCE_USE_DYNAMIC
+#define USE_DYNAMIC
+#elif FORCE_USE_CLASS || UNITY_IOS
+#define USE_CLASS
+#else
+#define USE_PROXY
+#endif
+
+#if USE_PROXY
+using Castle.DynamicProxy;
+#endif
 using SneakRobber2.Shared;
+using SneakRobber2.Utility;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Net;
 using System.Text;
 
@@ -24,13 +39,24 @@ namespace SneakRobber2.Network
         /// <value>
         /// The invoker.
         /// </value>
+#if USE_DYNAMIC
+        public dynamic Invoker { get; private set; }
+#elif USE_PROXY || USE_CLASS
         public IInvokerRpc Invoker { get; private set; }
+#endif
 
         public RpcClientWithType()
         {
+#if USE_DYNAMIC
+            Invoker = new DynamicRpcInvoker(this);
+#elif USE_PROXY
             IProxyGenerator gen = new ProxyGenerator();
             Invoker = gen.CreateInterfaceProxyWithoutTarget<IInvokerRpc>(new Interceptor(this));
+#else
+            Invoker = (IInvokerRpc)(object)new PlayerToLobbyInvoker(this);  // Only for player to lobby
+#endif
         }
+
 
         /// <summary>
         /// Called when received data.
@@ -45,6 +71,24 @@ namespace SneakRobber2.Network
             typeof(TExecutor).GetMethod(func).Invoke(callObj, ps);
         }
 
+#if USE_DYNAMIC
+        public class DynamicRpcInvoker : DynamicObject
+        {
+            readonly RpcClientWithType<TExecutor, IExecutorRpc, IInvokerRpc> client;
+
+            public DynamicRpcInvoker(RpcClientWithType<TExecutor, IExecutorRpc, IInvokerRpc> client)
+            {
+                this.client = client;
+            }
+
+            public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
+            {
+                client.Send(binder.Name, args);
+                result = null;
+                return true;
+            }
+        }
+#elif USE_PROXY
         private class Interceptor : IInterceptor
         {
             readonly RpcClientWithType<TExecutor, IExecutorRpc, IInvokerRpc> client;
@@ -59,5 +103,41 @@ namespace SneakRobber2.Network
                 client.Send(invocation.Method.Name, invocation.Arguments);
             }
         }
+#elif USE_CLASS
+        public class PlayerToLobbyInvoker : IPlayerToLobby
+        {
+            private RpcClient client;
+
+            public PlayerToLobbyInvoker(RpcClient client)
+            {
+                this.client = client;
+            }
+
+            public void ChangeName(string name)
+            {
+                client.Send(RuntimeUtility.GetCallerName(), new object[] { name });
+            }
+
+            public void ChangeRoom(string room)
+            {
+                client.Send(RuntimeUtility.GetCallerName(), new object[] { room });
+            }
+
+            public void Exit()
+            {
+                client.Send(RuntimeUtility.GetCallerName(), new object[] { });
+            }
+
+            public void Prepare()
+            {
+                client.Send(RuntimeUtility.GetCallerName(), new object[] { });
+            }
+
+            public void Unprepare()
+            {
+                client.Send(RuntimeUtility.GetCallerName(), new object[] { });
+            }
+        }
+#endif
     }
 }
