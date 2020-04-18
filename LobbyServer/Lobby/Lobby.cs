@@ -270,7 +270,7 @@ namespace SneakRobber2.Lobby
                             CreateNoWindow = false,
                             WindowStyle = ProcessWindowStyle.Normal,
                             FileName = instance.serverPath,
-                            Arguments = "-rname " + player.Room
+                            Arguments = $"-rname \"{player.Room}\""
                         };
                         var startInfo = Process.Start(pInfo);
                         Logger.LogInfo($"Server process started pid={startInfo.Id}");
